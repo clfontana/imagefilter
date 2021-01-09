@@ -1,8 +1,11 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import { send } from 'process';
 
 (async () => {
+
+  let absoluteFileName = "";
 
   // Init the Express application
   const app = express();
@@ -17,7 +20,6 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   // GET /filteredimage?image_url={{URL}}
   // endpoint to filter an image from a public url.
   // IT SHOULD
-  //    1
   //    1. validate the image_url query
   //    2. call filterImageFromURL(image_url) to filter the image
   //    3. send the resulting file in the response
@@ -33,10 +35,50 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   
   // Root Endpoint
   // Displays a simple message to the user
+
+  
   app.get( "/", async ( req, res ) => {
     res.send("try GET /filteredimage?image_url={{}}")
   } );
-  
+
+  app.get( "/deleteimage", async ( req, res ) => {
+    
+      let { image_path } = req.query;
+
+      if (!image_path){
+        return res.status(400).send('image_path query param required!');
+      }
+     
+      // return an absolute path to a filtered image locally saved file
+      deleteLocalFiles(image_path);
+
+      res.send(`${image_path} deleted`);
+
+  });
+
+  app.get( "/filteredimage", async ( req, res ) => {
+    let { image_url } = req.query;
+
+    if (!image_url){
+      return res.status(400).send('image_url query param required!');
+    }
+     
+    // return an absolute path to a filtered image locally saved file
+    const fiAbsolutePath = filterImageFromURL(image_url);
+
+    absoluteFileName = await fiAbsolutePath.then(value => {return value;});
+
+    fiAbsolutePath.catch(error => {
+      console.log(error);
+      return res.status(500).send(error);
+    });
+
+    //res.send(`${absoluteFileName}`);
+    res.sendFile(absoluteFileName);
+    
+    setTimeout(() => deleteLocalFiles([absoluteFileName]), 0);
+
+  } );
 
   // Start the Server
   app.listen( port, () => {
