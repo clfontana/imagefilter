@@ -1,11 +1,10 @@
+import {Request, Response} from 'express';
 import express from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
 import { send } from 'process';
 
 (async () => {
-
-  let absoluteFileName = "";
 
   // Init the Express application
   const app = express();
@@ -28,43 +27,39 @@ import { send } from 'process';
   //    image_url: URL of a publicly accessible image
   // RETURNS
   //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
-
   /**************************************************************************** */
-
   //! END @TODO1
   
   // Root Endpoint
   // Displays a simple message to the user
-
-  
-  app.get( "/", async ( req, res ) => {
+  app.get( "/", async ( req: Request, res: Response ) => {
     res.send("try GET /filteredimage?image_url={{}}")
   } );
 
-  app.get( "/deleteimage", async ( req, res ) => {
+  app.get( "/deleteimage", async ( req: Request, res: Response ) => {
     
-      let { image_path } = req.query;
+      let imagePath: string = req.query.image_path;
 
-      if (!image_path){
+      if (!imagePath){
         return res.status(400).send('image_path query param required!');
       }
      
-      // return an absolute path to a filtered image locally saved file
-      deleteLocalFiles(image_path);
+      deleteLocalFiles([imagePath]);
 
-      res.send(`${image_path} deleted`);
+      res.status(200).send(`${imagePath} deleted`);
 
   });
 
-  app.get( "/filteredimage", async ( req, res ) => {
-    let { image_url } = req.query;
+  app.get( "/filteredimage", async ( req: Request, res: Response ) => {
+    let imageUrl: string = req.query.image_url;
+    let absoluteFileName: string = "";
 
-    if (!image_url){
+    if (!imageUrl){
       return res.status(400).send('image_url query param required!');
     }
      
     // return an absolute path to a filtered image locally saved file
-    const fiAbsolutePath = filterImageFromURL(image_url);
+    const fiAbsolutePath = filterImageFromURL(imageUrl);
 
     absoluteFileName = await fiAbsolutePath.then(value => {return value;});
 
@@ -73,10 +68,9 @@ import { send } from 'process';
       return res.status(500).send(error);
     });
 
-    //res.send(`${absoluteFileName}`);
-    res.sendFile(absoluteFileName);
+    res.status(200).sendFile(absoluteFileName);
     
-    setTimeout(() => deleteLocalFiles([absoluteFileName]), 0);
+    setTimeout(() => deleteLocalFiles([absoluteFileName]), 100);
 
   } );
 
